@@ -89,6 +89,7 @@ static void window_load(Window *window) {
 }
 
 static void window_unload(Window *window) {
+  text_layer_destroy(text_layer);
   bitmap_layer_destroy(image_layer);
   if(image){
     gbitmap_destroy(image);
