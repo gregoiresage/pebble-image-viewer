@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Image Viewer</title>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="stylesheet" href="http://code.jquery.com/mobile/1.4.1/jquery.mobile-1.4.1.min.css">
+	<script src="http://code.jquery.com/jquery-1.10.2.min.js"></script>
+	<script src="http://code.jquery.com/mobile/1.4.1/jquery.mobile-1.4.1.min.js"></script>
+	<script src="http://ajax.aspnetcdn.com/ajax/jquery.validate/1.11.1/jquery.validate.min.js"></script>
+	<style type="text/css">
+	</style>
+</head>
+
+<body>
+	<div data-role="page" id="configuration">
+		<div data-role="header" id="header">
+			<button id="b-cancel" data-icon="back" data-iconpos="left" data-inline="true" data-mini="true">Cancel</button>
+			<h1>Image Viewer</h1>
+		</div>
+		<div data-role="content">
+			<form id="configuration-form">
+				<div class="ui-field-contain">
+					<label for="inverted">Image URL :</label>
+					<input type="text" name="url" id="url" value=""  data-clear-btn="true" placeholder="JPEG only"/>
+				</div>			
+				<button id="b-submit" data-theme="b" data-icon="check" data-iconpos="right">Save</button>
+			</form>
+		</div>
+	</div>
+	<script type="text/javascript">	 
+
+		$().ready(function() {	  
+			var dictionary;
+			try {
+				dictionary = JSON.parse(localStorage['ImageViewer']);
+			} catch(e) {
+				dictionary = {
+					"url" : "http://lorempixel.com/144/168/"
+				};
+			}
+			
+			$('#url').val(dictionary['url']);
+		});
+		
+		// Handle different UI on i-devices
+		if( /iPhone|iPad|iPod/i.test(navigator.userAgent) ) {
+			$("#header").remove();
+		}
+		
+		$("form :input").on("keypress", function(e) {
+			return e.keyCode != 13;
+		});
+
+		$('#b-submit').click(function() {
+			var dictionary = {};
+			dictionary['url'] = $('#url').val();
+			localStorage['ImageViewer'] = JSON.stringify(dictionary);
+
+			var location = "pebblejs://close#" + encodeURIComponent(localStorage['ImageViewer']);
+			window.location.href = location;
+		});
+	
+		$('#b-cancel').click(function() {
+			var location = "pebblejs://close#";
+			window.location.href = location;
+		});
+	</script>
+</body>
+</html>
