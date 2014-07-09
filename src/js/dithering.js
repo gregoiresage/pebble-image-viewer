@@ -1,3 +1,5 @@
+// Credits : Ivan Kuckir : http://blog.ivank.net/floyd-steinberg-dithering-in-javascript.html
+
 // byte shift by 4 (x = x>>4;) corresponds to integer division by 16
 
 /*
