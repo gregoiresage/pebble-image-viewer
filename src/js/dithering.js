@@ -23,13 +23,3 @@ function floydSteinberg(sb, w, h)   // source buffer, width, height
       }
 }
 
-function greyScale(rgba_input, w, h){
-   var result = [];  // Array of bytes that we produce
-   for(var y = 0; y < h; y++){
-      for(var x = 0; x < w; x++){
-         var i = (y * 3) * w + x * 3;
-         result[y * w + x] = Math.floor(0.299*rgba_input[i] + 0.587*rgba_input[i + 1] + 0.114*rgba_input[i + 2]);        
-      }
-   }  
-   return result;
-}
