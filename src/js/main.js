@@ -67,6 +67,29 @@ function convertImage(rgbaPixels, numComponents, width, height){
   return bitmap;
 }
 
+function getPbiImage(url){
+  var xhr = new XMLHttpRequest();
+  xhr.open("GET", url, true);
+  xhr.responseType = "arraybuffer";
+  xhr.onload = function() {
+    if(xhr.status == 200 && xhr.response) {
+      clearTimeout(xhrTimeout); // got response, no more need in timeout
+      var data = new Uint8Array(xhr.response);
+      var bitmap = [];
+      for(var i=0; i<data.byteLength; i++) {
+        bitmap.push(data[i]);
+      }
+      sendBitmap(bitmap);
+    }
+  };
+
+  var xhrTimeout = setTimeout(function() {
+    sendMessage({"message":"Error : Timeout"}, null, null);
+  }, DOWNLOAD_TIMEOUT);
+
+  xhr.send(null);
+}
+
 function getGifImage(url){
   var xhr = new XMLHttpRequest();
   xhr.open("GET", url, true);
@@ -130,7 +153,10 @@ function getImage(url){
   console.log("Image URL : "+ url);
   sendMessage({"message":"Downloading image..."}, null, null);
 
-  if(endsWith(url, ".gif") || endsWith(url, ".GIF")){
+  if(endsWith(url, ".pbi")){
+    getPbiImage(url);
+  }
+  else if(endsWith(url, ".gif") || endsWith(url, ".GIF")){
     getGifImage(url);
   }
   else if(endsWith(url, ".jpg") || endsWith(url, ".jpeg") || endsWith(url, ".JPG") || endsWith(url, ".JPEG")){
