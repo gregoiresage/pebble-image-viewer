@@ -14,7 +14,7 @@ function pushUInt32(array, value){
  * Credits : Damian Mehers : http://blog.evernote.com/tech/2014/04/23/evernote-pebble-update/#bitmaps
  */
 
-function toPebbleBitmap(bw_input, width, height){
+function toPBI(bw_input, width, height){
    // Calculate the number of bytes per row, one bit per pixel, padded to 4 bytes
    var rowSizePaddedWords = Math.floor((width + 31) / 32);
    var widthBytes = rowSizePaddedWords * 4;

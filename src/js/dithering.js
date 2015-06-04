@@ -5,7 +5,7 @@
 /*
    function converts values from grayscale (0-255) to black and white (0 or 255)
 */
-function floydSteinberg(sb, w, h)   // source buffer, width, height
+function floydSteinbergBW(sb, w, h)   // source buffer, width, height
 {
    for(var y=0; y<h; y++)
       for(var x=0; x<w; x++)

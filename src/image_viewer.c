@@ -3,19 +3,30 @@
 static Window *window;
 
 static BitmapLayer  *image_layer;
-static GBitmap      *image;
-static uint8_t      *data_image;
+static GBitmap      *image = NULL;
+static uint8_t      *data_image = NULL;
+static uint32_t     data_size;
 
 static TextLayer    *text_layer;
 
 #define KEY_IMAGE   0
 #define KEY_INDEX   1
 #define KEY_MESSAGE 2
+#define KEY_SIZE    3
 
 #define CHUNK_SIZE 1500
 
 static void cb_in_received_handler(DictionaryIterator *iter, void *context) {
   // Get the bitmap
+ 
+  Tuple *size_tuple  = dict_find(iter, KEY_SIZE);
+  if(size_tuple){
+    if(data_image)
+      free(data_image);
+    data_size = size_tuple->value->uint32;
+    data_image = malloc(data_size);
+  }
+
   Tuple *image_tuple = dict_find(iter, KEY_IMAGE);
   Tuple *index_tuple = dict_find(iter, KEY_INDEX);
   if (index_tuple && image_tuple) {
@@ -29,7 +40,11 @@ static void cb_in_received_handler(DictionaryIterator *iter, void *context) {
         gbitmap_destroy(image);
         image = NULL;
       }
+#ifdef PBL_COLOR
+      image = gbitmap_create_from_png_data(data_image, data_size);
+#else
       image = gbitmap_create_with_data(data_image);
+#endif
       bitmap_layer_set_bitmap(image_layer, image);
       text_layer_set_text(text_layer, "");
       layer_mark_dirty(bitmap_layer_get_layer(image_layer));
@@ -55,6 +70,7 @@ static void select_click_handler(ClickRecognizerRef recognizer, void *context) {
     image = NULL;
     bitmap_layer_set_bitmap(image_layer, image);
   }
+
   text_layer_set_text(text_layer, "Updating image...");
 
   DictionaryIterator *iter;
@@ -73,10 +89,7 @@ static void window_load(Window *window) {
   Layer *window_layer = window_get_root_layer(window);
   GRect bounds = layer_get_bounds(window_layer);
 
-  image = gbitmap_create_with_data(data_image);
-
   image_layer = bitmap_layer_create(bounds);
-  bitmap_layer_set_bitmap(image_layer, image);
   bitmap_layer_set_alignment(image_layer, GAlignCenter);
   layer_add_child(window_layer, bitmap_layer_get_layer(image_layer));
 
@@ -93,26 +106,28 @@ static void window_unload(Window *window) {
   bitmap_layer_destroy(image_layer);
   if(image){
     gbitmap_destroy(image);
-    image = NULL;
+  }
+  if(data_image){
+    free(data_image);
   }
 }
 
 static void init(void) {
   app_message_init();
-  data_image = malloc(sizeof(uint8_t) * (5 * 4) * 168 + 12);
   window = window_create();
   window_set_click_config_provider(window, click_config_provider);
   window_set_window_handlers(window, (WindowHandlers) {
     .load = window_load,
     .unload = window_unload,
   });
+#ifdef PBL_SDK_2
   window_set_fullscreen(window, true);
+#endif
   window_stack_push(window, true);
 }
 
 static void deinit(void) {
   window_destroy(window);
-  free(data_image);
 }
 
 int main(void) {

@@ -5,6 +5,8 @@
 # Feel free to customize this to your needs.
 #
 
+import os.path
+
 top = '.'
 out = 'build'
 
@@ -17,10 +19,40 @@ def configure(ctx):
 def build(ctx):
     ctx.load('pebble_sdk')
 
-    ctx.pbl_program(source=ctx.path.ant_glob('src/**/*.c'),
-                    target='pebble-app.elf')
+    build_worker = os.path.exists('worker_src')
+    binaries = []
 
-    ctx(rule='cat ${SRC} > ${TGT}', source=ctx.path.ant_glob('src/js/**/*.js'), target='pebble-js-app.js')
+    ctx(rule=generate_appinfo_js, source='appinfo.json', target='appinfo.js')
+    ctx(rule='cat ${SRC} > ${TGT}', source=['appinfo.js'] + ctx.path.ant_glob('src/js/**/*.js'), target='pebble-js-app.js')
 
-    ctx.pbl_bundle(elf='pebble-app.elf',
-                   js='pebble-js-app.js')
+    for p in ctx.env.TARGET_PLATFORMS:
+        ctx.set_env(ctx.all_envs[p])
+        ctx.set_group(ctx.env.PLATFORM_NAME)
+        app_elf='{}/pebble-app.elf'.format(ctx.env.BUILD_DIR)
+        ctx.pbl_program(source=ctx.path.ant_glob('src/**/*.c'),
+        target=app_elf)
+
+        if build_worker:
+            worker_elf='{}/pebble-worker.elf'.format(ctx.env.BUILD_DIR)
+            binaries.append({'platform': p, 'app_elf': app_elf, 'worker_elf': worker_elf})
+            ctx.pbl_worker(source=ctx.path.ant_glob('worker_src/**/*.c'),
+            target=worker_elf)
+        else:
+            binaries.append({'platform': p, 'app_elf': app_elf})
+
+    ctx.set_group('bundle')
+
+    ctx.pbl_bundle(binaries=binaries, js='pebble-js-app.js')
+
+# http://matthewtole.com/blog/2014/07/22/simplify-your-pebble-development-with-wscript/
+def generate_appinfo_js(task):
+  src = task.inputs[0].abspath()
+  target = task.outputs[0].abspath()
+  data = open(src).read().strip()
+
+  f = open(target, 'w')
+  f.write('/* exported AppInfo */\n\n')
+  f.write('var AppInfo = ')
+  f.write(data)
+  f.write(';')
+  f.close()

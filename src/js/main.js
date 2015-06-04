@@ -10,6 +10,8 @@ function sendBitmap(bitmap){
   var nextSize = bitmap.length-i > CHUNK_SIZE ? CHUNK_SIZE : bitmap.length-i;
   var sliced = bitmap.slice(i, i + nextSize);
 
+  MessageQueue.sendAppMessage({"size": bitmap.length});
+
   var success = function(){
     if(i>=bitmap.length)
       return;
@@ -17,7 +19,7 @@ function sendBitmap(bitmap){
     console.log(i + "/" + bitmap.length);
     nextSize = bitmap.length-i > CHUNK_SIZE ? CHUNK_SIZE : bitmap.length-i;
     sliced = bitmap.slice(i, i + nextSize);
-    sendMessage(
+    MessageQueue.sendAppMessage(
       {
       "index":i,
       "chunk":sliced
@@ -27,18 +29,7 @@ function sendBitmap(bitmap){
       );
   };
 
-  // var error = function(){
-  //   sendMessage(
-  //     {
-  //     "index":i,
-  //     "chunk":sliced
-  //     },
-  //     success,
-  //     error
-  //     );
-  // }
-
-  sendMessage(
+  MessageQueue.sendAppMessage(
       {
       "index":i,
       "chunk":sliced
@@ -49,20 +40,35 @@ function sendBitmap(bitmap){
 }
 
 function convertImage(rgbaPixels, numComponents, width, height){
-  var grey_pixels = greyScale(rgbaPixels, width, height, numComponents);
+
+  var watch_info;
+  if(Pebble.getActiveWatchInfo) {
+    watch_info = Pebble.getActiveWatchInfo() || { 'platform' : 'aplite'};
+  } else {
+    watch_info = { 'platform' : 'aplite'};
+  }
 
   var ratio = Math.min(144 / width,168 / height);
   var ratio = Math.min(ratio,1);
 
   var final_width = Math.floor(width * ratio);
   var final_height = Math.floor(height * ratio);
-
   var final_pixels = [];
-  ScaleRect(final_pixels, grey_pixels, width, height, final_width, final_height);
+  var bitmap = [];
 
-  floydSteinberg(final_pixels, final_width, final_height);
-
-  var bitmap = toPebbleBitmap(final_pixels, final_width, final_height);
+  if(watch_info.platform === 'aplite') {
+    var grey_pixels = greyScale(rgbaPixels, width, height, numComponents);
+    ScaleRect(final_pixels, grey_pixels, width, height, final_width, final_height, 1);
+    floydSteinbergBW(final_pixels, final_width, final_height);
+    bitmap = toPBI(final_pixels, final_width, final_height);
+  }
+  else {
+    ScaleRect(final_pixels, rgbaPixels, width, height, final_width, final_height, numComponents);
+    var png = generatePngForPebble(final_width, final_height, final_pixels);
+    for(var i=0; i<png.length; i++){
+      bitmap.push(png.charCodeAt(i));
+    }
+  }
 
   return bitmap;
 }
@@ -84,7 +90,7 @@ function getPbiImage(url){
   };
 
   var xhrTimeout = setTimeout(function() {
-    sendMessage({"message":"Error : Timeout"}, null, null);
+    MessageQueue.sendAppMessage({"message":"Error : Timeout"}, null, null);
   }, DOWNLOAD_TIMEOUT);
 
   xhr.send(null);
@@ -97,7 +103,7 @@ function getGifImage(url){
   xhr.onload = function() {
     clearTimeout(xhrTimeout); // got response, no more need in timeout
 
-    sendMessage({"message":"Decoding image..."}, null, null);
+    MessageQueue.sendAppMessage({"message":"Decoding image..."}, null, null);
 
     var data = new Uint8Array(xhr.response || xhr.mozResponseArrayBuffer);
     var gr = new GifReader(data);
@@ -112,7 +118,7 @@ function getGifImage(url){
   };
 
   var xhrTimeout = setTimeout(function() {
-    sendMessage({"message":"Error : Timeout"}, null, null);
+    MessageQueue.sendAppMessage({"message":"Error : Timeout"}, null, null);
   }, DOWNLOAD_TIMEOUT);
 
   xhr.send(null);
@@ -123,7 +129,7 @@ function getJpegImage(url){
   j.onload = function() {
     clearTimeout(xhrTimeout); // got response, no more need in timeout
 
-    sendMessage({"message":"Decoding image..."}, null, null);
+    MessageQueue.sendAppMessage({"message":"Decoding image..."}, null, null);
 
     console.log("Jpeg size : " + j.width + "x" + j.height);
 
@@ -135,7 +141,7 @@ function getJpegImage(url){
   };
 
   var xhrTimeout = setTimeout(function() {
-    sendMessage({"message":"Error : Timeout"}, null, null);
+    MessageQueue.sendAppMessage({"message":"Error : Timeout"}, null, null);
   }, DOWNLOAD_TIMEOUT);
 
   try{
@@ -151,7 +157,7 @@ function endsWith(str, suffix) {
 
 function getImage(url){
   console.log("Image URL : "+ url);
-  sendMessage({"message":"Downloading image..."}, null, null);
+  MessageQueue.sendAppMessage({"message":"Downloading image..."}, null, null);
 
   if(endsWith(url, ".pbi")){
     getPbiImage(url);
@@ -175,21 +181,6 @@ Pebble.addEventListener("appmessage", function(e) {
   getImage(options.url);
 });
 
-function sendMessage(data, success, failure) {
-  Pebble.sendAppMessage(
-    data,
-    function(e) {
-      // console.log("Successfully delivered message with transactionId=" + e.data.transactionId);
-      if(success)
-        success();
-    },
-    function(e) {
-      console.log("Unable to deliver message with transactionId=" + e.data.transactionId + " Error is: " + e.error.message);
-      if(failure)
-          failure();
-    });
-}
-
 Pebble.addEventListener('showConfiguration', function(e) {
   var uri = 'http://petitpepito.free.fr/config/imageviewer_config.html';
   Pebble.openURL(uri);
@@ -202,3 +193,4 @@ Pebble.addEventListener('webviewclosed', function(e) {
     getImage(options.url);
   } 
 });
+

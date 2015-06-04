@@ -1,6 +1,6 @@
 // Scaline & ScaleRect algorithms from : http://www.compuphase.com/graphic/scale.htm 
 
-function ScaleLine(Target, Source, SrcWidth, TgtWidth, offset_target, offset_source)
+function ScaleLine(Target, Source, SrcWidth, TgtWidth, offset_target, offset_source, numComponents)
 {
   var NumPixels = TgtWidth;
   var IntPart = Math.floor(SrcWidth / TgtWidth);
@@ -11,17 +11,19 @@ function ScaleLine(Target, Source, SrcWidth, TgtWidth, offset_target, offset_sou
   var i_source = offset_source;
 
   while (NumPixels-- > 0) {
-    Target[i_target++] = Source[i_source];
+    for(var i=0; i<numComponents; i++)
+      Target[numComponents*i_target + i] = Source[numComponents*i_source + i];
+    i_target ++;
     i_source += IntPart;
     E += FractPart;
     if (E >= TgtWidth) {
       E -= TgtWidth;
-      i_source++;
+      i_source ++;
     } /* if */
   } /* while */
 }
 
-function ScaleRect(Target, Source, SrcWidth, SrcHeight, TgtWidth, TgtHeight)
+function ScaleRect(Target, Source, SrcWidth, SrcHeight, TgtWidth, TgtHeight, numComponents)
 {
   var NumPixels = TgtHeight;
   var IntPart = Math.floor(SrcHeight / TgtHeight) * SrcWidth;
@@ -32,7 +34,7 @@ function ScaleRect(Target, Source, SrcWidth, SrcHeight, TgtWidth, TgtHeight)
   var i_source = 0;
 
   while (NumPixels-- > 0) {
-    ScaleLine(Target, Source, SrcWidth, TgtWidth, i_target, i_source);
+    ScaleLine(Target, Source, SrcWidth, TgtWidth, i_target, i_source, numComponents);
     PrevSource = Source;
 
     i_target += TgtWidth;
