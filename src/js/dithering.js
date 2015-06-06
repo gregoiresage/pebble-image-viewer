@@ -1,25 +1,32 @@
 // Credits : Ivan Kuckir : http://blog.ivank.net/floyd-steinberg-dithering-in-javascript.html
 
-// byte shift by 4 (x = x>>4;) corresponds to integer division by 16
-
-/*
-   function converts values from grayscale (0-255) to black and white (0 or 255)
-*/
-function floydSteinbergBW(sb, w, h)   // source buffer, width, height
+function floydSteinberg(sb, w, h, nearestcolor) 
 {
+   var numcomponents = sb.length / (w * h);
    for(var y=0; y<h; y++)
       for(var x=0; x<w; x++)
       {
-         var ci = y*w+x;               // current buffer index
-         var cc = sb[ci];              // current color
-         var rc = (cc<128?0:255);      // real (rounded) color
-         sb[ci] = rc;                  // saving real color
-         var err = cc-rc;              // error amount
-         if(x+1<w)   sb[ci  +1] += (err*7)>>4;  // if right neighbour exists
-         if(y+1==h)  continue;   // if we are in the last line
-         if(x  >0)   sb[ci+w-1] += (err*3)>>4;  // bottom left neighbour
-                     sb[ci+w  ] += (err*5)>>4;  // bottom neighbour
-         if(x+1<w)   sb[ci+w+1] += (err*1)>>4;  // bottom right neighbour
+         var ci = numcomponents*(y*w+x);               // current buffer index
+         for(var comp=0; comp<numcomponents; comp++){
+            var cc = sb[ci+comp];         // current color
+            var rc = nearestcolor(cc);    // real (rounded) color
+            sb[ci+comp] = rc;                  // saving real color
+            var err = cc-rc;              // error amount
+            if(x+1<w)   sb[ci+comp+1] += (err*7)>>4;  // if right neighbour exists
+            if(y+1==h)  continue;   // if we are in the last line
+            if(x  >0)   sb[ci+comp+numcomponents*w-1] += (err*3)>>4;  // bottom left neighbour
+                        sb[ci+comp+numcomponents*w  ] += (err*5)>>4;  // bottom neighbour
+            if(x+1<w)   sb[ci+comp+numcomponents*w+1] += (err*1)>>4;  // bottom right neighbour
+         }
       }
 }
 
+function pebble_nearest_color_to_pebble_palette(component)
+{
+   return Math.floor((component + 42) / 85) * 85;
+}
+
+function pebble_nearest_color_to_black_white(component)
+{
+   return (component<128?0:255);
+}

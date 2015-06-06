@@ -59,11 +59,12 @@ function convertImage(rgbaPixels, numComponents, width, height){
   if(watch_info.platform === 'aplite') {
     var grey_pixels = greyScale(rgbaPixels, width, height, numComponents);
     ScaleRect(final_pixels, grey_pixels, width, height, final_width, final_height, 1);
-    floydSteinbergBW(final_pixels, final_width, final_height);
+    floydSteinberg(final_pixels, final_width, final_height, pebble_nearest_color_to_black_white);
     bitmap = toPBI(final_pixels, final_width, final_height);
   }
   else {
     ScaleRect(final_pixels, rgbaPixels, width, height, final_width, final_height, numComponents);
+    floydSteinberg(final_pixels, final_width, final_height, pebble_nearest_color_to_pebble_palette);
     var png = generatePngForPebble(final_width, final_height, final_pixels);
     for(var i=0; i<png.length; i++){
       bitmap.push(png.charCodeAt(i));
