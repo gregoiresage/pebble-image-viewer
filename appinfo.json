@@ -3,8 +3,8 @@
   "shortName": "Image viewer",
   "longName": "Image viewer",
   "companyName": "Gregoire Sage",
-  "versionCode": 4,
-  "versionLabel": "2.0",
+  "versionCode": 5,
+  "versionLabel": "2.1",
   "watchapp": {
     "watchface": false
   },
