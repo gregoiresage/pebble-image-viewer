@@ -152,6 +152,48 @@ function getJpegImage(url){
   }
 }
 
+function getPngImage(url){
+  var xhr = new XMLHttpRequest();
+  xhr.open("GET", url, true);
+  xhr.responseType = "arraybuffer";
+  xhr.onload = function() {
+    clearTimeout(xhrTimeout); // got response, no more need in timeout
+
+    MessageQueue.sendAppMessage({"message":"Decoding image..."}, null, null);
+
+    var data = new Uint8Array(xhr.response || xhr.mozResponseArrayBuffer);
+
+    var png     = new PNG(data);
+    var width   = png.width;
+    var height  = png.height;
+    var palette = png.palette;
+    var pixels  = png.decodePixels();
+    var bitmap  = [];
+
+    if(palette.length > 0){
+      var png_arr = [];
+      for(var i=0; i<pixels.length; i++) {
+        png_arr.push(palette[3*pixels[i]+0] & 0xFF);
+        png_arr.push(palette[3*pixels[i]+1] & 0xFF);
+        png_arr.push(palette[3*pixels[i]+2] & 0xFF);
+      }
+      bitmap = convertImage(png_arr, 3, width, height);
+    }
+    else {
+      var components = pixels.length /( width*height);
+      bitmap = convertImage(pixels, components, width, height);
+    }
+
+    sendBitmap(bitmap);
+  };
+
+  var xhrTimeout = setTimeout(function() {
+    MessageQueue.sendAppMessage({"message":"Error : Timeout"}, null, null);
+  }, DOWNLOAD_TIMEOUT);
+
+  xhr.send(null);
+}
+
 function endsWith(str, suffix) {
     return str.indexOf(suffix, str.length - suffix.length) !== -1;
 }
@@ -168,6 +210,9 @@ function getImage(url){
   }
   else if(endsWith(url, ".jpg") || endsWith(url, ".jpeg") || endsWith(url, ".JPG") || endsWith(url, ".JPEG")){
     getJpegImage(url);
+  }
+  else if(endsWith(url, ".png") || endsWith(url, ".PNG")){
+    getPngImage(url);
   }
   else {
     getJpegImage(url);
@@ -194,4 +239,6 @@ Pebble.addEventListener('webviewclosed', function(e) {
     getImage(options.url);
   } 
 });
+
+
 
