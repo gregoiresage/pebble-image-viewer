@@ -20,6 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
+var zlib = require("./zlib/inflate.min.js");
 
 (function() {
   var PNG;
@@ -224,7 +225,7 @@
       if (data.length === 0) {
         return new Uint8Array(0);
       }
-      data = new Zlib.Inflate(data).decompress();
+      data = new zlib.Inflate(data).decompress();
       pixelBytes = this.pixelBitlength / 8;
       scanlineLength = pixelBytes * this.width;
       pixels = new Uint8Array(scanlineLength * this.height);
@@ -455,3 +456,5 @@
   window.PNG = PNG;
 
 }).call(this);
+
+module.exports = PNG;

@@ -1,8 +1,16 @@
-var options = JSON.parse(localStorage.getItem('options'));
-if (options === null) 
-  options = { "url" : "http://lorempixel.com/144/168/"};
+var dithering   = require('./dithering');
+var image_tools = require('./image_tools');
+var omggif      = require('omggif');
+var JpegImage   = require('./jpg');
+var MessageQueue= require('./js-message-queue.min.js');
+var Png4Pebble  = require('./generatepng4pebble.js');
+var PNG         = require('./png');
 
-var CHUNK_SIZE = 1500;
+var Clay = require('pebble-clay');
+var clayConfig = require('./config');
+var clay = new Clay(clayConfig);
+
+var CHUNK_SIZE = 6000;
 var DOWNLOAD_TIMEOUT = 20000;
 
 function sendBitmap(bitmap){
@@ -57,15 +65,15 @@ function convertImage(rgbaPixels, numComponents, width, height){
   var bitmap = [];
 
   if(watch_info.platform === 'aplite') {
-    var grey_pixels = greyScale(rgbaPixels, width, height, numComponents);
-    ScaleRect(final_pixels, grey_pixels, width, height, final_width, final_height, 1);
-    floydSteinberg(final_pixels, final_width, final_height, pebble_nearest_color_to_black_white);
+    var grey_pixels = image_tools.greyScale(rgbaPixels, width, height, numComponents);
+    image_tools.ScaleRect(final_pixels, grey_pixels, width, height, final_width, final_height, 1);
+    floydSteinberg(final_pixels, final_width, final_height, dithering.pebble_nearest_color_to_black_white);
     bitmap = toPBI(final_pixels, final_width, final_height);
   }
   else {
-    ScaleRect(final_pixels, rgbaPixels, width, height, final_width, final_height, numComponents);
-    floydSteinberg(final_pixels, final_width, final_height, pebble_nearest_color_to_pebble_palette);
-    var png = generatePngForPebble(final_width, final_height, final_pixels);
+    image_tools.ScaleRect(final_pixels, rgbaPixels, width, height, final_width, final_height, numComponents);
+    dithering.floydSteinberg(final_pixels, final_width, final_height, dithering.pebble_nearest_color_to_pebble_palette);
+    var png = Png4Pebble.png(final_width, final_height, final_pixels);
     for(var i=0; i<png.length; i++){
       bitmap.push(png.charCodeAt(i));
     }
@@ -107,7 +115,7 @@ function getGifImage(url){
     MessageQueue.sendAppMessage({"message":"Decoding image..."}, null, null);
 
     var data = new Uint8Array(xhr.response || xhr.mozResponseArrayBuffer);
-    var gr = new GifReader(data);
+    var gr = new omggif.GifReader(data);
     console.log("Gif size : "+ gr.width  +" " + gr.height);
 
     var pixels = [];
@@ -195,7 +203,7 @@ function getPngImage(url){
 }
 
 function endsWith(str, suffix) {
-    return str.indexOf(suffix, str.length - suffix.length) !== -1;
+  return str.indexOf(suffix, str.length - suffix.length) !== -1;
 }
 
 function getImage(url){
@@ -219,26 +227,6 @@ function getImage(url){
   }
 }
 
-Pebble.addEventListener("ready", function(e) {
-  // console.log("Ready to go!");  
-});
-
 Pebble.addEventListener("appmessage", function(e) {
-  getImage(options.url);
+  getImage(e.payload.url);
 });
-
-Pebble.addEventListener('showConfiguration', function(e) {
-  var uri = 'http://petitpepito.free.fr/config/imageviewer_config.html';
-  Pebble.openURL(uri);
-});
-
-Pebble.addEventListener('webviewclosed', function(e) {
-  if (e.response) {
-    options = JSON.parse(decodeURIComponent(e.response));
-    localStorage.setItem('options', JSON.stringify(options));
-    getImage(options.url);
-  } 
-});
-
-
-

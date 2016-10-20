@@ -1,4 +1,7 @@
 #include <pebble.h>
+#include <pebble-events/pebble-events.h>
+
+#include "enamel.h"
 
 static Window *window;
 
@@ -9,17 +12,15 @@ static uint32_t     data_size;
 
 static TextLayer    *text_layer;
 
-#define KEY_IMAGE   0
-#define KEY_INDEX   1
-#define KEY_MESSAGE 2
-#define KEY_SIZE    3
+static EventHandle s_enamel_event_handle;
+static EventHandle s_image_event_handle;
 
-#define CHUNK_SIZE 1500
+#define CHUNK_SIZE 6000
 
-static void cb_in_received_handler(DictionaryIterator *iter, void *context) {
+static void prv_image_received_handler(DictionaryIterator *iter, void *context) {
   // Get the bitmap
  
-  Tuple *size_tuple  = dict_find(iter, KEY_SIZE);
+  Tuple *size_tuple  = dict_find(iter, MESSAGE_KEY_size);
   if(size_tuple){
     if(data_image)
       free(data_image);
@@ -27,8 +28,8 @@ static void cb_in_received_handler(DictionaryIterator *iter, void *context) {
     data_image = malloc(data_size);
   }
 
-  Tuple *image_tuple = dict_find(iter, KEY_IMAGE);
-  Tuple *index_tuple = dict_find(iter, KEY_INDEX);
+  Tuple *image_tuple = dict_find(iter, MESSAGE_KEY_chunk);
+  Tuple *index_tuple = dict_find(iter, MESSAGE_KEY_index);
   if (index_tuple && image_tuple) {
     int32_t index = index_tuple->value->int32;
 
@@ -51,20 +52,13 @@ static void cb_in_received_handler(DictionaryIterator *iter, void *context) {
     }
   }
 
-  Tuple *message_tuple = dict_find(iter, KEY_MESSAGE);
+  Tuple *message_tuple = dict_find(iter, MESSAGE_KEY_message);
   if(message_tuple){
     text_layer_set_text(text_layer, message_tuple->value->cstring);
   }
 }
 
-static void app_message_init() {
-  // Register message handlers
-  app_message_register_inbox_received(cb_in_received_handler);
-  // Init buffers
-  app_message_open(app_message_inbox_size_maximum(), APP_MESSAGE_OUTBOX_SIZE_MINIMUM);
-}
-
-static void select_click_handler(ClickRecognizerRef recognizer, void *context) {
+static void get_image(){
   if(image){
     gbitmap_destroy(image);
     image = NULL;
@@ -74,11 +68,14 @@ static void select_click_handler(ClickRecognizerRef recognizer, void *context) {
   text_layer_set_text(text_layer, "Updating image...");
 
   DictionaryIterator *iter;
-  uint8_t value = 1;
   app_message_outbox_begin(&iter);
-  dict_write_int(iter, KEY_IMAGE, &value, 1, true);
+  dict_write_cstring(iter, MESSAGE_KEY_url, enamel_get_url());
   dict_write_end(iter);
   app_message_outbox_send();
+}
+
+static void select_click_handler(ClickRecognizerRef recognizer, void *context) {
+  get_image();
 }
 
 static void click_config_provider(void *context) {
@@ -112,21 +109,34 @@ static void window_unload(Window *window) {
   }
 }
 
+static void prv_settings_received_handler(void *context){
+  get_image();
+}
+
 static void init(void) {
-  app_message_init();
+  enamel_init();
+  s_enamel_event_handle = enamel_settings_received_subscribe(prv_settings_received_handler, NULL);
+
+  events_app_message_request_inbox_size(6500);
+  events_app_message_request_outbox_size(150);
+
+  s_image_event_handle = events_app_message_register_inbox_received(prv_image_received_handler, NULL);
+
+  events_app_message_open();
+
   window = window_create();
   window_set_click_config_provider(window, click_config_provider);
   window_set_window_handlers(window, (WindowHandlers) {
     .load = window_load,
     .unload = window_unload,
   });
-#ifdef PBL_SDK_2
-  window_set_fullscreen(window, true);
-#endif
   window_stack_push(window, true);
 }
 
 static void deinit(void) {
+  enamel_settings_received_unsubscribe(s_enamel_event_handle);
+  events_app_message_unsubscribe(s_image_event_handle);
+  enamel_deinit();
   window_destroy(window);
 }
 

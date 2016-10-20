@@ -1,12 +1,17 @@
 ////// adapted from https://github.com/wheany/js-png-encoder/blob/master/generatepng.js
 
+// var zlib = require("zlibjs");
+var zlib = require("./zlib/deflate.min.js");
 
-(function(globalObj) {
+
+var Png4Pebble=(function() {
     'use strict';
     var CRC_TABLE = [],
         SIGNATURE = String.fromCharCode(137, 80, 78, 71, 13, 10, 26, 10),
         NO_FILTER = 0,
         PEBBLE_PALETTE = [],
+        constructor = function() {
+        },
         make_crc_table = function() {
             var n, c, k;
             for (n = 0; n < 256; n++) {
@@ -157,7 +162,7 @@
                 }
             }
 
-            var compressed = new Zlib.Deflate(scanlines_arr).compress();
+            var compressed = new zlib.Deflate(scanlines_arr).compress();
             for (var i = 0; i < compressed.length; i++) {
                 compressedScanlines += String.fromCharCode(compressed[i]);
             }
@@ -170,6 +175,9 @@
     make_crc_table();
     make_pebble_palette();
     IEND = createChunk(0, 'IEND', '');
-    globalObj.generatePngForPebble = png;
-}(this));
+    return {
+        png : png
+    };
+})();
 
+module.exports = Png4Pebble;

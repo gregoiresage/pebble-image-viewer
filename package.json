@@ -1,0 +1,44 @@
+{
+  "version": "2.3.0",
+  "author": "Gregoire Sage",
+  "private": true,
+  "dependencies": {
+    "enamel": "^1.2.4",
+    "omggif": "^1.0.8",
+    "pebble-clay": "^1.0.3",
+    "zlibjs": "^0.2.0"
+  },
+  "keywords": [
+    "pebble-app"
+  ],
+  "pebble": {
+    "sdkVersion": "3",
+    "resources": {
+      "media": []
+    },
+    "projectType": "native",
+    "uuid": "ed4bd38e-6b71-4cc2-a3cf-1a3732ec2f2b",
+    "messageKeys": [
+      "index",
+      "chunk",
+      "message",
+      "size",
+      "url"
+    ],
+    "enableMultiJS": true,
+    "displayName": "Image viewer",
+    "watchapp": {
+      "onlyShownOnCommunication": false,
+      "hiddenApp": false,
+      "watchface": false
+    },
+    "targetPlatforms": [
+      "aplite",
+      "basalt"
+    ],
+    "capabilities": [
+      "configurable"
+    ]
+  },
+  "name": "Image viewer"
+}

@@ -1,6 +1,6 @@
 // Scaline & ScaleRect algorithms from : http://www.compuphase.com/graphic/scale.htm 
 
-function ScaleLine(Target, Source, SrcWidth, TgtWidth, offset_target, offset_source, numComponents)
+var ScaleLine = function(Target, Source, SrcWidth, TgtWidth, offset_target, offset_source, numComponents)
 {
   var NumPixels = TgtWidth;
   var IntPart = Math.floor(SrcWidth / TgtWidth);
@@ -23,7 +23,7 @@ function ScaleLine(Target, Source, SrcWidth, TgtWidth, offset_target, offset_sou
   } /* while */
 }
 
-function ScaleRect(Target, Source, SrcWidth, SrcHeight, TgtWidth, TgtHeight, numComponents)
+var ScaleRect = function(Target, Source, SrcWidth, SrcHeight, TgtWidth, TgtHeight, numComponents)
 {
   var NumPixels = TgtHeight;
   var IntPart = Math.floor(SrcHeight / TgtHeight) * SrcWidth;
@@ -47,7 +47,7 @@ function ScaleRect(Target, Source, SrcWidth, SrcHeight, TgtWidth, TgtHeight, num
   } /* while */
 }
 
-function greyScale(rgba_input, w, h, nb_components){
+var greyScale = function(rgba_input, w, h, nb_components){
    var result = [];  // Array of bytes that we produce
    for(var y = 0; y < h; y++){
       for(var x = 0; x < w; x++){
@@ -58,3 +58,8 @@ function greyScale(rgba_input, w, h, nb_components){
    return result;
 }
 
+module.exports = {
+  ScaleLine: ScaleLine,
+  ScaleRect: ScaleRect,
+  greyScale: greyScale
+}

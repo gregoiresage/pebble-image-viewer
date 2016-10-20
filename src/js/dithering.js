@@ -1,6 +1,6 @@
 // Credits : Ivan Kuckir : http://blog.ivank.net/floyd-steinberg-dithering-in-javascript.html
 
-function floydSteinberg(sb, w, h, nearestcolor) 
+var floydSteinberg = function(sb, w, h, nearestcolor) 
 {
    var numcomponents = sb.length / (w * h);
    for(var y=0; y<h; y++)
@@ -21,12 +21,19 @@ function floydSteinberg(sb, w, h, nearestcolor)
       }
 }
 
-function pebble_nearest_color_to_pebble_palette(component)
+var pebble_nearest_color_to_pebble_palette = function(component)
 {
    return Math.floor((component + 42) / 85) * 85;
 }
 
-function pebble_nearest_color_to_black_white(component)
+var pebble_nearest_color_to_black_white = function(component)
 {
    return (component<128?0:255);
+}
+
+
+module.exports = {
+  floydSteinberg: floydSteinberg,
+  pebble_nearest_color_to_pebble_palette: pebble_nearest_color_to_pebble_palette,
+  pebble_nearest_color_to_black_white: pebble_nearest_color_to_black_white
 }

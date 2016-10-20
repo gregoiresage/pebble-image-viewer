@@ -51,3 +51,8 @@ function toPBI(bw_input, width, height){
 
    return result;
 }
+
+
+module.exports = {
+  toPBI: toPBI
+}

@@ -968,3 +968,5 @@ var JpegImage = (function jpegImage() {
   return constructor;
 })();
 
+module.exports = JpegImage;
+
