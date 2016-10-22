@@ -4,9 +4,8 @@
   "private": true,
   "dependencies": {
     "enamel": "^1.2.4",
-    "omggif": "^1.0.8",
     "pebble-clay": "^1.0.3",
-    "zlibjs": "^0.2.0"
+    "pebble-image-grabber": "file:///home/greg/pebble-dev/pebble-image-grabber"
   },
   "keywords": [
     "pebble-app"

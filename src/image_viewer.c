@@ -1,5 +1,6 @@
 #include <pebble.h>
 #include <pebble-events/pebble-events.h>
+#include <pebble-image-grabber/pebble-image-grabber.h>
 
 #include "enamel.h"
 
@@ -7,54 +8,39 @@ static Window *window;
 
 static BitmapLayer  *image_layer;
 static GBitmap      *image = NULL;
-static uint8_t      *data_image = NULL;
-static uint32_t     data_size;
 
 static TextLayer    *text_layer;
 
 static EventHandle s_enamel_event_handle;
-static EventHandle s_image_event_handle;
 
-#define CHUNK_SIZE 6000
-
-static void prv_image_received_handler(DictionaryIterator *iter, void *context) {
-  // Get the bitmap
- 
-  Tuple *size_tuple  = dict_find(iter, MESSAGE_KEY_size);
-  if(size_tuple){
-    if(data_image)
-      free(data_image);
-    data_size = size_tuple->value->uint32;
-    data_image = malloc(data_size);
-  }
-
-  Tuple *image_tuple = dict_find(iter, MESSAGE_KEY_chunk);
-  Tuple *index_tuple = dict_find(iter, MESSAGE_KEY_index);
-  if (index_tuple && image_tuple) {
-    int32_t index = index_tuple->value->int32;
-
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "image received index=%ld size=%d", index, image_tuple->length);
-    memcpy(data_image + index,&image_tuple->value->uint8,image_tuple->length);
-
-    if(image_tuple->length < CHUNK_SIZE){
-      if(image){
-        gbitmap_destroy(image);
-        image = NULL;
-      }
-#ifdef PBL_COLOR
-      image = gbitmap_create_from_png_data(data_image, data_size);
-#else
-      image = gbitmap_create_with_data(data_image);
-#endif
-      bitmap_layer_set_bitmap(image_layer, image);
-      text_layer_set_text(text_layer, "");
-      layer_mark_dirty(bitmap_layer_get_layer(image_layer));
+static void prv_image_cb(uint8_t *data, uint16_t size, ImageGrabberStatus status){
+  
+  if(status == ImageGrabberDone){
+    APP_LOG(0, "DONE -> total size = %d bytes", size);
+    if(image){
+      gbitmap_destroy(image);
+      image = NULL;
     }
+#ifdef PBL_COLOR
+    image = gbitmap_create_from_png_data(data, size);
+#else
+    image = gbitmap_create_with_data(data);
+#endif
+    free(data);
+    bitmap_layer_set_bitmap(image_layer, image);
+    text_layer_set_text(text_layer, "");
   }
-
-  Tuple *message_tuple = dict_find(iter, MESSAGE_KEY_message);
-  if(message_tuple){
-    text_layer_set_text(text_layer, message_tuple->value->cstring);
+  else if(status == ImageGrabberStatusPending){
+    APP_LOG(0, "PENDING size %d", size);
+    text_layer_set_text(text_layer, "PENDING");
+  }
+  else if(status == ImageGrabberStatusFailed){
+    APP_LOG(0, "FAILURE");
+    text_layer_set_text(text_layer, "FAILURE");
+  }
+  else if(status == ImageGrabberNotAnImage){
+    APP_LOG(0, "ImageGrabberNotAnImage");
+    text_layer_set_text(text_layer, "Wrong format");
   }
 }
 
@@ -64,14 +50,8 @@ static void get_image(){
     image = NULL;
     bitmap_layer_set_bitmap(image_layer, image);
   }
-
-  text_layer_set_text(text_layer, "Updating image...");
-
-  DictionaryIterator *iter;
-  app_message_outbox_begin(&iter);
-  dict_write_cstring(iter, MESSAGE_KEY_url, enamel_get_url());
-  dict_write_end(iter);
-  app_message_outbox_send();
+  image_grabber_get(enamel_get_url());
+  text_layer_set_text(text_layer, "Request sent");
 }
 
 static void select_click_handler(ClickRecognizerRef recognizer, void *context) {
@@ -104,9 +84,6 @@ static void window_unload(Window *window) {
   if(image){
     gbitmap_destroy(image);
   }
-  if(data_image){
-    free(data_image);
-  }
 }
 
 static void prv_settings_received_handler(void *context){
@@ -117,10 +94,10 @@ static void init(void) {
   enamel_init();
   s_enamel_event_handle = enamel_settings_received_subscribe(prv_settings_received_handler, NULL);
 
-  events_app_message_request_inbox_size(6500);
-  events_app_message_request_outbox_size(150);
-
-  s_image_event_handle = events_app_message_register_inbox_received(prv_image_received_handler, NULL);
+  image_grabber_init((ImageGrabberSettings){
+    .chunk_size = 6000,
+    .callback = prv_image_cb
+  });
 
   events_app_message_open();
 
@@ -135,8 +112,8 @@ static void init(void) {
 
 static void deinit(void) {
   enamel_settings_received_unsubscribe(s_enamel_event_handle);
-  events_app_message_unsubscribe(s_image_event_handle);
   enamel_deinit();
+  image_grabber_deinit();
   window_destroy(window);
 }
 

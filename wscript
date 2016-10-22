@@ -15,7 +15,6 @@ import sys
 sys.path.append('node_modules/enamel')
 from enamel import generate
 
-
 top = '.'
 out = 'build'
 
@@ -27,6 +26,7 @@ def options(ctx):
 def configure(ctx):
     ctx.load('pebble_sdk')
     generate(configFile='src/js/config.js', outputDir='src')
+
 
 def build(ctx):
     if False and hint is not None:
@@ -54,4 +54,4 @@ def build(ctx):
             binaries.append({'platform': p, 'app_elf': app_elf})
 
     ctx.set_group('bundle')
-    ctx.pbl_bundle(binaries=binaries, js=ctx.path.ant_glob(['src/js/**/*.js', 'src/pkjs/**/*.json']), js_entry_file='src/js/app.js')
+    ctx.pbl_bundle(binaries=binaries, js=ctx.path.ant_glob(['src/js/**/*.js', 'src/js/**/*.json']), js_entry_file='src/js/app.js')
