@@ -50,7 +50,13 @@ static void get_image(){
     image = NULL;
     bitmap_layer_set_bitmap(image_layer, image);
   }
-  image_grabber_get(enamel_get_url());
+  #ifdef PBL_PLATFORM_EMERY
+  image_grabber_get(enamel_get_url(), GSize(200,228));
+  #elif PBL_RECT
+  image_grabber_get(enamel_get_url(), GSize(144,168));
+  #else
+  image_grabber_get(enamel_get_url(), GSize(180,180));
+  #endif
   text_layer_set_text(text_layer, "Request sent");
 }
 
@@ -94,8 +100,10 @@ static void init(void) {
   enamel_init();
   s_enamel_event_handle = enamel_settings_received_subscribe(prv_settings_received_handler, NULL);
 
+  APP_LOG(0, "outmax %ld ", app_message_outbox_size_maximum());
+
   image_grabber_init((ImageGrabberSettings){
-    .chunk_size = 6000,
+    .chunk_size = 2000,
     .callback = prv_image_cb
   });
 
